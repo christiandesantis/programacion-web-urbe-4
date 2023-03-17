@@ -19,9 +19,9 @@
     </div>
   </div>
 
-  <div class="q-mt-xl bg-grey-2 q-pa-md" style="border-radius: 10px;">
+  <div v-if="dynamicOptions.xaxis.categories.length > 0 && dynamicSeries[0].data.length > 0" class="q-mt-xl bg-grey-2 q-pa-md" style="border-radius: 10px;">
     <div class="text-h6 text-center">Gráfica</div>
-    <apexchart width="600" type="bar" :options="options" :series="series"></apexchart>
+    <apexchart width="600" type="bar" :options="dynamicOptions" :series="dynamicSeries"></apexchart>
   </div>
 </template>
 
@@ -67,27 +67,31 @@ const collectionsReference = [
   'cabimas'
 ]
 
-const items = ref<{ psi: string, datetime: string }[]>([])
+const items = ref<{ psi: number, datetime: string }[]>([])
 
-// const itemsSorted = computed(() => {
-//   if (items.value.length > 0) {
-//     // eslint-disable-next-line vue/no-side-effects-in-computed-properties
-//     return items.value.sort((a, b) => Number(new Date(b.datetime)) - Number(new Date(a.datetime)))
-//   } else {
-//     return []
-//   }
-// })
+const itemsSorted = computed(() => {
+  if (items.value.length > 0) {
+    // eslint-disable-next-line vue/no-side-effects-in-computed-properties
+    return items.value.sort((a, b) => Number(new Date(a.datetime)) - Number(new Date(b.datetime)))
+  } else {
+    return []
+  }
+})
 
 const dynamicOptions = computed(() => {
   const newCategories: string[] = []
   if (items.value.length > 0) {
-    items.value.forEach(item => {
+    itemsSorted.value.forEach(item => {
       const cat = generateCategory(item.datetime)
       if (
         newCategories.find(el => el === cat) === null ||
-        newCategories.find(el => el === cat) === undefined ||
-        newCategories.find(el => el === cat)?.length === 0
-      ) newCategories.push(cat)
+        newCategories.find(el => el === cat) === undefined
+      ) {
+        console.log(cat)
+        if (new Date(item.datetime) >= new Date(dateRange.value.from) && new Date(item.datetime) <= new Date(dateRange.value.to)) {
+          newCategories.push(cat)
+        }
+      }
     })
 
     return {
@@ -112,9 +116,13 @@ const dynamicOptions = computed(() => {
 
 const dynamicSeries = computed(() => {
   if (dynamicOptions.value.xaxis.categories.length > 0) {
+    const data: number[] = []
+    dynamicOptions.value.xaxis.categories.forEach(element => {
+      data.push(getMonthAverage(element))
+    })
     return [{
       name: 'Promedio',
-      data: [45, 50, 49, 60, 70, 91]
+      data
     }]
   } else {
     return [{
@@ -156,6 +164,30 @@ function generateCategory (datetime: string) {
     case 4:
       monthString = 'ABR'
       break
+    case 5:
+      monthString = 'MAY'
+      break
+    case 6:
+      monthString = 'JUN'
+      break
+    case 7:
+      monthString = 'JUL'
+      break
+    case 8:
+      monthString = 'AGO'
+      break
+    case 9:
+      monthString = 'SEP'
+      break
+    case 10:
+      monthString = 'OCT'
+      break
+    case 11:
+      monthString = 'NOV'
+      break
+    case 12:
+      monthString = 'DIC'
+      break
 
     default:
       monthString = month < 10 ? `0${month} / ` : `${month} / `
@@ -164,9 +196,66 @@ function generateCategory (datetime: string) {
   return `${monthString} ${year}`
 }
 
-// function orderCategoriesByYear (categories: string[]) {
+function getMonthAverage (monthString: string): number {
+  const yearValue = Number(monthString.split(' ')[1])
+  let monthValue: number = null as unknown as number
+  switch (monthString.split(' ')[0]) {
+    case 'ENE':
+      monthValue = 1
+      break
+    case 'FEB':
+      monthValue = 2
+      break
+    case 'MAR':
+      monthValue = 3
+      break
+    case 'ABR':
+      monthValue = 4
+      break
+    case 'MAY':
+      monthValue = 5
+      break
+    case 'JUN':
+      monthValue = 6
+      break
+    case 'JUL':
+      monthValue = 7
+      break
+    case 'AGO':
+      monthValue = 8
+      break
+    case 'SEP':
+      monthValue = 9
+      break
+    case 'OCT':
+      monthValue = 10
+      break
+    case 'NOV':
+      monthValue = 11
+      break
+    case 'DIC':
+      monthValue = 12
+      break
+  }
+  let sum = 0
+  let count = 0
+  itemsSorted.value.forEach(element => {
+    if (
+      (new Date(element.datetime).getMonth() + 1) === monthValue &&
+      (new Date(element.datetime).getFullYear()) === yearValue
+    ) {
+      sum += Number(element.psi)
+      console.log('sum', sum)
+      count += 1
+      console.log('count', count)
+    }
+  })
+  return (sum / count)
+}
 
-// }
+function orderCategoriesByYear (categories: string[]): string[] {
+  return categories.sort((a, b) => Number(b.split(' ')[1]) - Number(a.split(' ')[1]))
+}
 
 onMounted(async () => {
   shaft.value = shaftOptions.value[0]

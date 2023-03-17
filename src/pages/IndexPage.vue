@@ -18,7 +18,7 @@
 
         <q-separator />
 
-        <q-tab-panels v-model="tab" animated>
+        <q-tab-panels keep-alive v-model="tab" animated>
           <q-tab-panel name="add">
             <div class="text-h6 q-mb-lg">Agregar Registro</div>
             <AddForm />
